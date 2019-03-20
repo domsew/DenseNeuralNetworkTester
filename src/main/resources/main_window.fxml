@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<BorderPane prefHeight="700.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="app.MainController">
+   <center>
+      <SplitPane dividerPositions="0.75">
+         <items>
+            <VBox>
+               <children>
+                  <TableView fx:id="layersTable" editable="true" prefHeight="200.0" />
+                  <LineChart fx:id="accuracyChart" prefHeight="300.0" title="Accuracy">
+                    <xAxis>
+                      <NumberAxis label="epoch" side="BOTTOM" />
+                    </xAxis>
+                    <yAxis>
+                      <NumberAxis label="accuracy" side="LEFT" />
+                    </yAxis>
+                  </LineChart>
+                  <LineChart fx:id="lossChart" prefHeight="300.0" title="Loss">
+                    <xAxis>
+                      <NumberAxis label="epoch" side="BOTTOM" />
+                    </xAxis>
+                    <yAxis>
+                      <NumberAxis label="loss" side="LEFT" />
+                    </yAxis>
+                  </LineChart>
+               </children>
+            </VBox>
+            <VBox spacing="5.0">
+               <children>
+                  <Pane>
+                     <children>
+                        <Button layoutY="2.0" mnemonicParsing="false" onAction="#onShowSamples" text="Show samples" />
+                        <Button layoutY="150.0" mnemonicParsing="false" onAction="#onAdd" text="+" />
+                        <Button layoutY="175.0" mnemonicParsing="false" onAction="#onRemove" prefHeight="25.0" prefWidth="25.0" text="-" />
+                        <VBox layoutX="18.0" layoutY="46.0" spacing="5.0">
+                           <children>
+                              <Label text="Accuracy" />
+                              <Text fx:id="accuracyText" strokeType="OUTSIDE" strokeWidth="0.0">
+                                 <font>
+                                    <Font name="System Bold" size="12.0" />
+                                 </font>
+                              </Text>
+                              <Label text="Loss" />
+                              <Text fx:id="lossText" strokeType="OUTSIDE" strokeWidth="0.0">
+                                 <font>
+                                    <Font name="System Bold" size="12.0" />
+                                 </font>
+                              </Text>
+                           </children>
+                        </VBox>
+                     </children>
+                  </Pane>
+                  <Label text="Loss function" />
+                  <TextField editable="false" prefHeight="25.0" prefWidth="68.0" text="Cross entropy" />
+                  <Label text="Epochs" />
+                  <TextField fx:id="epochsInput" alignment="CENTER_RIGHT" prefHeight="25.0" prefWidth="68.0" text="3" />
+                  <Label text="Batch size" />
+                  <TextField fx:id="batchInput" alignment="CENTER_RIGHT" prefHeight="25.0" prefWidth="68.0" text="10" />
+                  <Label prefHeight="17.0" prefWidth="46.0" text="η (eta)" />
+                  <TextField fx:id="etaInput" alignment="CENTER_RIGHT" prefHeight="25.0" prefWidth="68.0" text="3" />
+                  <Label text="Train dataset size" />
+                  <TextField fx:id="datasetSizeInput" alignment="CENTER_RIGHT" prefHeight="25.0" prefWidth="68.0" text="10000" />
+                  <CheckBox fx:id="validateCheckBox" mnemonicParsing="false" selected="true" text="Validate" />
+                  <HBox alignment="TOP_RIGHT" spacing="10.0">
+                     <VBox.margin>
+                        <Insets top="5.0" />
+                     </VBox.margin>
+                     <children>
+                        <Button mnemonicParsing="false" onAction="#onReset" text="Reset" />
+                        <Button mnemonicParsing="false" onAction="#onStart" text="Start" />
+                     </children>
+                  </HBox>
+               </children>
+               <padding>
+                  <Insets right="10.0" />
+               </padding>
+            </VBox>
+         </items>
+      </SplitPane>
+   </center>
+</BorderPane>
