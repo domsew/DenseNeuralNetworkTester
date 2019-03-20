@@ -1,10 +1,9 @@
 package nn;
 
 import org.nd4j.linalg.dataset.DataSet;
-import java.io.IOException;
 
 public class NetworkTester {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         MnistData mnist = new MnistData();
         DataSet trainData = mnist.getTrainData(1000, true);
         Network network = new Network(new int[] {784, 50, 10});

@@ -8,8 +8,6 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Pane;
 import nn.MnistData;
 import org.nd4j.linalg.dataset.DataSet;
-
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 
@@ -21,7 +19,7 @@ public class MnistSamplesPane extends Pane {
     private int height = 28;
     private int width = 28;
 
-    public MnistSamplesPane(MnistData mnist) throws IOException {
+    public MnistSamplesPane(MnistData mnist) throws Exception {
         this.mnist = mnist;
         canvas = new Canvas();
         canvas.setHeight(305);
@@ -32,7 +30,7 @@ public class MnistSamplesPane extends Pane {
         drawSamples();
     }
 
-    private void drawSamples() throws IOException {
+    private void drawSamples() throws Exception {
         double k = Math.random()*59600;
         Iterator<DataSet> data = mnist.getTrainData((int)k, 25, false).iterator();
 

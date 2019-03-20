@@ -50,7 +50,7 @@ public class MnistData {
     }
     
     private DataSet loadDataSet(String imagesFile, String labelsFile, Integer skip, Integer take, boolean normalized) throws Exception {
-        if (take <= 0) {
+        if (take != null && take <= 0) {
             throw new Exception("Take cant be <= 0");
         }
         INDArray images = readImages(basePath + imagesFile, skip, take);

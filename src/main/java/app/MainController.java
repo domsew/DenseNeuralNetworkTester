@@ -61,7 +61,7 @@ public class MainController implements Initializable {
             tableData.remove(tableData.size() - 2);
         }
     }
-    @FXML void onShowSamples() throws IOException {
+    @FXML void onShowSamples() throws Exception {
         Stage stage = new Stage();
         stage.setTitle("Examples");
         stage.setScene(new Scene(new MnistSamplesPane(mnistDataset)));

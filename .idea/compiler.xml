@@ -9,8 +9,5 @@
         <module name="DenseNeuralNetworkTester" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="DenseNeuralNetworkTester" target="8" />
-    </bytecodeTargetLevel>
   </component>
 </project>
