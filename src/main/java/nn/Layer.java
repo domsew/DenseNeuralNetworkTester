@@ -7,6 +7,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ReluUniformInitScheme;
 
+import java.util.Arrays;
+
 public class Layer {
     INDArray weights;
     INDArray biases;
@@ -18,40 +20,39 @@ public class Layer {
 
     public Layer(int units, int input_dim) {
         WeightInitScheme weightInit = new ReluUniformInitScheme('c', units);
-        weights = weightInit.create(units, input_dim);
-        biases = Nd4j.randn(units, 1);
+        weights = weightInit.create(input_dim, units);
+        biases = Nd4j.randn(1, units);
         activation = new ActivationReLU();
     }
 
-    public INDArray predict(INDArray x) {
-        INDArray z = weights.mmul(x).addi(biases);
-        if (activation == null) {
-            return z;
-        }
-        return activation.getActivation(z, false);
+    public INDArray call(INDArray input) {
+        return call(input, false);
     }
 
-    public INDArray activate(INDArray x) {
-        inputs = x;
-        logits = weights.mmul(inputs).addi(biases);
-        if (activation == null) {
-            return logits;
+    public INDArray call(INDArray input, boolean training) {
+        INDArray z = input.mmul(weights).addiRowVector(biases);
+        if (training) {
+            inputs = input;
+            logits = z;
         }
-        return activation.getActivation(logits, false);
+        return activation == null ? z : activation.getActivation(z, false);
     }
 
-    public INDArray backward(INDArray gradient) {
+    public INDArray applyGrad(INDArray grad, double eta) {
         if (activation != null) {
-            gradient = activation.backprop(logits, gradient).getFirst();
+            grad = activation.backprop(logits, grad).getFirst();
         }
-        if (dW == null) {
-            dW = gradient.mmul(inputs.transpose());
-            dB = gradient;
-        } else {
-            dW.addi(gradient.mmul(inputs.transpose()));
-            dB.addi(gradient);
-        }
-        return weights.transpose().mmul(gradient);
+        INDArray dW = inputs.transpose().mmul(grad);
+        INDArray dB = grad.sum(0);
+
+        double factor = eta / inputs.size(0);
+        grad = weights.mmul(grad.transpose()).transpose();
+        weights.subi(dW.muli(factor));
+        biases.subi(dB.muli(factor));
+        inputs = null;
+        logits = null;
+
+        return grad;
     }
 
     public void update(double eta, double miniBatchSize) {

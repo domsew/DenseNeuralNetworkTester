@@ -3,6 +3,7 @@ package nn;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -16,6 +17,7 @@ public class Network {
     private NetworkEvent validationHandler;
     ILossFunction loss;
     IActivation outActivation;
+    int numClasses;
 
     public Network(int[] sizes) {
         layers = new Layer[sizes.length-1];
@@ -26,6 +28,7 @@ public class Network {
         layers[layers.length - 1].activation = null;
         outActivation = new ActivationSoftmax();
         loss = new LossMCXENT();
+        numClasses = sizes[sizes.length - 1];
     }
 
     public void setValidationListener(NetworkEvent handler) {
@@ -35,18 +38,16 @@ public class Network {
         testHandler = handler;
     }
 
-    public INDArray predict(INDArray x) {
-        return predict(x, false);
+    public INDArray predict(INDArray input) {
+        return predict(input, false);
     }
-    public INDArray predict(INDArray x, boolean getLogits) {
-        x = x.transpose();
+
+    public INDArray predict(INDArray input, boolean training) {
         for (Layer layer : layers) {
-            x = layer.predict(x);
+            input = layer.call(input, training);
         }
-        if (getLogits) {
-            return x;
-        }
-        return outActivation.getActivation(x, false);
+        return input;
+//        return outActivation.getActivation(input, false);
     }
 
     public double[] fit(DataSet trainDataSet, int numEpoch, int batchSize, double eta, DataSet validationDataSet) {
@@ -54,29 +55,21 @@ public class Network {
         List<DataSet> batches = trainDataSet.batchBy(batchSize);
         double[] result = new double[2];
 
-        evaluate(trainDataSet, validationDataSet, 0);
+//        evaluate(trainDataSet, validationDataSet, 0);
         for (int i = 0; i < numEpoch; i++) {
             for (DataSet batch : batches) {
-                for (DataSet data : batch) {
-                    backpropagation(data);
-                }
-                for (Layer layer : layers) {
-                    layer.update(eta, batch.numExamples());
-                }
+                INDArray pred = this.predict(batch.getFeatures(), true);
+                INDArray grad = loss.computeGradient(oneHot(batch.getLabels()), pred, outActivation, null);
+                backpropagation(grad, eta);
             }
             result = evaluate(trainDataSet, validationDataSet, i+1);
         }
         return result;
     }
 
-    private void backpropagation(DataSet data) {
-        INDArray x = data.getFeatures().transpose();
-        for (Layer layer : layers) {
-            x = layer.activate(x);
-        }
-        INDArray gradient = loss.computeGradient(oneHot(data.getLabels()), x, outActivation, null);
+    private void backpropagation(INDArray grad, double eta) {
         for (int l = layers.length - 1; l >= 0; l--) {
-            gradient = layers[l].backward(gradient);
+            grad = layers[l].applyGrad(grad, eta);
         }
     }
 
@@ -98,21 +91,19 @@ public class Network {
         return result;
     }
 
-    private INDArray oneHot(INDArray y) {
-        return Nd4j.zeros(10, 1).putScalar(y.toIntVector(),1);
+    private INDArray oneHot(INDArray input) {
+        INDArray output = Nd4j.zeros(input.size(0), numClasses);
+        for (int i = 0; i < input.size(0); i++) {
+            output.put(i, input.getInt(i), 1);
+        }
+        return output;
     }
 
-    private double[] calculateLossAndAccuracy(DataSet dataSet) {
-        double correct = 0;
-        double score = 0;
-        for (DataSet data : dataSet) {
-            INDArray z = predict(data.getFeatures(), true);
-            INDArray y = data.getLabels();
-            if (z.argMax().equals(y)) {
-                correct++;
-            }
-            score += loss.computeScore(oneHot(y), z, outActivation, null, false);
-        }
-        return new double[]{ correct / dataSet.numExamples(), score / dataSet.numExamples() };
+    private double[] calculateLossAndAccuracy(DataSet ds) {
+        INDArray pred = predict(ds.getFeatures(), false);
+        INDArray correct = pred.argMax(1).eqi(ds.getLabels()).sum();
+        double score = loss.computeScore(oneHot(ds.getLabels()), pred, outActivation, null, true);
+
+        return new double[]{ correct.getDouble(0) / ds.numExamples(), score };
     }
 }
