@@ -10,7 +10,7 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception{
-        Parent root = FXMLLoader.load(getClass().getResource("/main_window.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("/network.fxml"));
         primaryStage.setTitle("Dense NN tester");
         primaryStage.setScene(new Scene(root, 600, 700));
         primaryStage.show();
