@@ -5,6 +5,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -19,15 +20,16 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.text.Text;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
-import nn.MnistData;
+import nn.Mnist;
 import nn.Network;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.SplitTestAndTrain;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.ResourceBundle;
 
 public class NetworkController implements Initializable {
@@ -41,21 +43,18 @@ public class NetworkController implements Initializable {
     @FXML TextField etaInput;
     @FXML TextField datasetSizeInput;
     @FXML CheckBox validateCheckBox;
-
     ObservableList<Layer> tableData = FXCollections.observableArrayList();
-    MnistData mnistDataset;
+    private DataSet dataSet;
     int cnt;
     Thread thread;
+    private Parent dataChooser;
+
+    public void initialize(URL location, ResourceBundle resources) {
+        tableInit();
+    }
 
     @FXML void openDataset() throws IOException {
-        Scene scene = layersTable.getScene();
-        Stage stage = (Stage)scene.getWindow();
-
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/data_chooser.fxml"));
-        Parent root = loader.load();
-        DataChooserController dataChooser = loader.getController();
-        dataChooser.init(this, scene, stage);
-        stage.setScene(new Scene(root));
+        layersTable.getScene().setRoot(getDataChooser());
     }
 
     @FXML void onStart() throws Exception {
@@ -76,23 +75,14 @@ public class NetworkController implements Initializable {
             tableData.remove(tableData.size() - 2);
         }
     }
-    @FXML void onShowSamples() throws Exception {
+    @FXML void onShowSamples() throws IOException {
         Stage stage = new Stage();
         stage.setTitle("Examples");
-        stage.setScene(new Scene(new MnistSamplesPane(mnistDataset)));
+        stage.setScene(new Scene(new MnistSamplesPane(getDataSet())));
         stage.show();
     }
 
-    public void initialize(URL location, ResourceBundle resources) {
-        try {
-            mnistDataset = new MnistData();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        tableInit();
-    }
-
-    private void learnNetwork() throws Exception {
+    private void learnNetwork() throws IOException {
         int epochs = Integer.parseInt(epochsInput.getText());
         int batch = Integer.parseInt(batchInput.getText());
         double eta = Double.parseDouble(etaInput.getText());
@@ -101,7 +91,7 @@ public class NetworkController implements Initializable {
         int[] sizes = new int[tableData.size()];
         int index = 0;
         for (Layer row : tableData) {
-             sizes[index++] = Integer.parseInt(row.unitsProperty().getValue());
+            sizes[index++] = Integer.parseInt(row.unitsProperty().getValue());
         }
         Network network = new Network(sizes);
 
@@ -125,9 +115,16 @@ public class NetworkController implements Initializable {
             Platform.runLater(() -> valAccuracySeries.getData().add(new XYChart.Data<>(epoch, accuracy)));
             Platform.runLater(() -> valLossSeries.getData().add(new XYChart.Data<>(epoch, loss)));
         });
-
-        DataSet trainData = mnistDataset.getTrainData(take, true);
-        DataSet valData = validate ? mnistDataset.getTestData(true) : null;
+        DataSet ds = take > 0 ? getDataSet().sample(take) : getDataSet();
+        DataSet trainData, valData;
+        if (validate) {
+            SplitTestAndTrain split = ds.splitTestAndTrain(0.9);
+            trainData = split.getTrain();
+            valData = split.getTest();
+        } else {
+            trainData = ds;
+            valData = null;
+        }
 
         thread = new Thread(() -> {
             double[] metrics = network.fit(trainData, epochs, batch, eta, valData);
@@ -136,6 +133,25 @@ public class NetworkController implements Initializable {
         });
         thread.start();
         cnt++;
+    }
+
+    public void setDataSet(DataSet ds, int inputSize) {
+        tableData.get(0).units.setValue(Integer.toString(inputSize));
+        dataSet = ds;
+    }
+
+    public DataSet getDataSet() throws IOException {
+        return dataSet != null ?  dataSet : Mnist.load();
+    }
+
+    private Parent getDataChooser() throws IOException {
+        if (dataChooser == null) {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/data_chooser.fxml"));
+            dataChooser = loader.load();
+            DataChooserController controller = loader.getController();
+            controller.init(this, layersTable.getScene().getRoot());
+        }
+        return dataChooser;
     }
 
     private void tableInit() {
@@ -171,6 +187,10 @@ public class NetworkController implements Initializable {
 
         layersTable.getColumns().addAll(typeCol, unitsCol, activationCol);
         layersTable.setItems(tableData);
+    }
+
+    public void onClose(ActionEvent actionEvent) {
+        Platform.exit();
     }
 
     public class Layer {

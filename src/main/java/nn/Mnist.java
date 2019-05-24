@@ -14,6 +14,7 @@ public class Mnist {
     private static final String testLabelFile = "t10k-labels-idx1-ubyte";
 
     public static DataSet load() throws IOException {
+        get();
         Collection<File> features = DatasetLoader.toFiles(basePath, trainImageFile, testImageFile);
         Collection<File> labels = DatasetLoader.toFiles(basePath, trainLabelFile, testLabelFile);
         return DatasetLoader.load(features, labels, 784, 16, 8);

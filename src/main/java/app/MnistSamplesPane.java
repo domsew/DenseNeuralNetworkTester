@@ -6,21 +6,24 @@ import javafx.scene.image.PixelFormat;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Pane;
-import nn.MnistData;
 import org.nd4j.linalg.dataset.DataSet;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Iterator;
 
 public class MnistSamplesPane extends Pane {
 
     private Canvas canvas;
-    private MnistData mnist;
+    private DataSet dataSet;
     private GraphicsContext gc;
-    private int height = 28;
-    private int width = 28;
+    private int height;
+    private int width;
 
-    public MnistSamplesPane(MnistData mnist) throws Exception {
-        this.mnist = mnist;
+    public MnistSamplesPane(DataSet dataSet) {
+        this.dataSet = dataSet;
+        int xy = (int)Math.sqrt(dataSet.get(0).getFeatures().shape()[1]);
+        height = xy;
+        width = xy;
         canvas = new Canvas();
         canvas.setHeight(305);
         canvas.setWidth(305);
@@ -30,10 +33,10 @@ public class MnistSamplesPane extends Pane {
         drawSamples();
     }
 
-    private void drawSamples() throws Exception {
-        double k = Math.random()*59600;
-        Iterator<DataSet> data = mnist.getTrainData((int)k, 25, false).iterator();
-
+    private void drawSamples() {
+        DataSet ds = dataSet.sample(25);
+        ds.getFeatures().muli(255);
+        Iterator<DataSet> data = ds.iterator();
         for (int x = 0; x < 5; x++) {
             for (int y = 0; y < 5; y++) {
                 drawImage(data.next(), x * width * 2 + 5, y * height * 2 + 5);
@@ -49,7 +52,6 @@ public class MnistSamplesPane extends Pane {
         PixelWriter pixelWriter = writableImage.getPixelWriter();
         PixelFormat<ByteBuffer> pixelFormat = PixelFormat.getByteRgbInstance();
         byte[] buffer = new byte[height * width * numChannels];
-        // Arrays.fill(buffer, (byte)127);
 
         for (int r = 0; r < height; r++) {
             for (int c = 0; c < width; c++) {

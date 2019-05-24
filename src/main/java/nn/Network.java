@@ -39,7 +39,8 @@ public class Network {
     }
 
     public INDArray predict(INDArray input) {
-        return predict(input, false);
+        INDArray preds = predict(input, false);
+        return outActivation.getActivation(preds, false);
     }
 
     public INDArray predict(INDArray input, boolean training) {
@@ -47,7 +48,6 @@ public class Network {
             input = layer.call(input, training);
         }
         return input;
-//        return outActivation.getActivation(input, false);
     }
 
     public double[] fit(DataSet trainDataSet, int numEpoch, int batchSize, double eta, DataSet validationDataSet) {
@@ -55,7 +55,7 @@ public class Network {
         List<DataSet> batches = trainDataSet.batchBy(batchSize);
         double[] result = new double[2];
 
-//        evaluate(trainDataSet, validationDataSet, 0);
+        evaluate(trainDataSet, validationDataSet, 0);
         for (int i = 0; i < numEpoch; i++) {
             for (DataSet batch : batches) {
                 INDArray pred = this.predict(batch.getFeatures(), true);
@@ -75,8 +75,8 @@ public class Network {
 
     private double[] evaluate(DataSet trainDataSet, DataSet validationDataSet, int i) {
         double[] result;
-        if (trainDataSet.numExamples() > 10000) {
-            result = calculateLossAndAccuracy((DataSet)trainDataSet.getRange(0, 10000));
+        if (trainDataSet.numExamples() > 1000) {
+            result = calculateLossAndAccuracy(trainDataSet.sample(1000));
         } else {
             result = calculateLossAndAccuracy(trainDataSet);
         }
